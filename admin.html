@@ -131,8 +131,8 @@
 
     <script>
       // --- STEP 1: PASTE YOUR CLOUDINARY CONFIGS ---
-      const CLOUDINARY_CLOUD_NAME = 'YOUR_CLOUD_NAME';
-      const CLOUDINARY_UPLOAD_PRESET = 'YOUR_UPLOAD_PRESET';
+      const CLOUDINARY_CLOUD_NAME = 'tekstore';
+      const CLOUDINARY_UPLOAD_PRESET = 'eni-videos';
       // ---------------------------------------------
 
       // This is the unique name for our playlist file in Cloudinary.
@@ -170,7 +170,7 @@
       async function savePlaylist(playlist) {
         statusArea.textContent = 'Saving updated playlist...';
         loadingSpinner.classList.remove('hidden');
-        const url = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/raw/upload`;
+        const url = `https://api.cloudinary.com/v1_1/tekstore/raw/upload`;
         const jsonString = JSON.stringify(playlist, null, 2);
         const blob = new Blob([jsonString], { type: 'application/json' });
         const file = new File([blob], `${PLAYLIST_PUBLIC_ID}.json`);
