@@ -19,7 +19,7 @@
       .bg-eni-yellow:hover {
         background-color: #fabe00;
       }
-      .loader {
+      .spinner {
         border-top-color: #fabe00;
         animation: spin 1s linear infinite;
       }
@@ -61,7 +61,7 @@
           >
             0
           </div>
-          <div class="stat-label text-gray-500">Videos Uploaded</div>
+          <div class="stat-label text-gray-500">Videos in Playlist</div>
         </div>
         <div
           class="stat-card bg-white p-6 rounded-lg shadow-sm border border-gray-200"
@@ -72,7 +72,7 @@
           >
             0 MB
           </div>
-          <div class="stat-label text-gray-500">Total Storage Used</div>
+          <div class="stat-label text-gray-500">Total Size in Playlist</div>
         </div>
       </div>
 
@@ -100,22 +100,28 @@
             Click here or drag videos to upload
           </p>
           <p class="text-sm text-gray-500 mt-1">
-            Supported formats: MP4, WebM, MOV
+            Videos will be uploaded to Cloudinary
           </p>
           <input
             type="file"
             id="fileInput"
             class="hidden"
             multiple
-            accept="video/mp4,video/webm,video/quicktime"
+            accept="video/*"
           />
         </div>
       </div>
 
-      <div id="upload-progress-container" class="hidden mt-6"></div>
+      <div id="status-area" class="text-center mt-4 text-gray-600 h-6"></div>
 
       <div class="video-list mt-10">
-        <h2 class="text-2xl font-bold mb-4">Uploaded Videos</h2>
+        <h2 class="text-2xl font-bold mb-4 flex items-center">
+          Uploaded Videos
+          <div
+            id="loading-spinner"
+            class="hidden spinner ml-4 h-6 w-6 rounded-full border-4 border-gray-200"
+          ></div>
+        </h2>
         <div
           id="videoListContainer"
           class="bg-white rounded-lg shadow-sm border border-gray-200"
@@ -123,62 +129,101 @@
       </div>
     </div>
 
-    <script type="module">
-      import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js';
-      import {
-        getAuth,
-        signInAnonymously,
-      } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
-      import {
-        getFirestore,
-        collection,
-        doc,
-        addDoc,
-        deleteDoc,
-        onSnapshot,
-        serverTimestamp,
-      } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
-      import {
-        getStorage,
-        ref,
-        uploadBytesResumable,
-        getDownloadURL,
-        deleteObject,
-      } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js';
-
-      // --- STEP 1: PASTE YOUR FIREBASE CONFIG HERE ---
-      // You get this from your project settings on the Firebase website.
-      const firebaseConfig = {
-        apiKey: 'AIzaSyBc9HvS4ihm9UnI9Rk65SnrDB5rDMIf4WI',
-        authDomain: 'eni-display-system.firebaseapp.com',
-        projectId: 'eni-display-system',
-        storageBucket: 'eni-display-system.firebasestorage.app',
-        messagingSenderId: '62167080833',
-        appId: '1:62167080833:web:e6e4956b8a184ec25c9280',
-        measurementId: 'G-QHXJ85VP0D',
-      };
+    <script>
+      // --- STEP 1: PASTE YOUR CLOUDINARY CONFIGS ---
+      const CLOUDINARY_CLOUD_NAME = 'YOUR_CLOUD_NAME';
+      const CLOUDINARY_UPLOAD_PRESET = 'YOUR_UPLOAD_PRESET';
       // ---------------------------------------------
 
-      // Initialize Firebase
-      const app = initializeApp(firebaseConfig);
-      const auth = getAuth(app);
-      const db = getFirestore(app);
-      const storage = getStorage(app);
+      // This is the unique name for our playlist file in Cloudinary.
+      const PLAYLIST_PUBLIC_ID = 'eni_video_playlist';
 
-      const videosCollectionRef = collection(db, 'videos');
-
-      // UI Elements, State, and Functions
-      let videos = [];
+      // UI Elements & State
       const fileInput = document.getElementById('fileInput');
       const uploadSection = document.querySelector('.upload-section');
-      const progressContainer = document.getElementById(
-        'upload-progress-container'
-      );
+      const videoListContainer = document.getElementById('videoListContainer');
+      const statusArea = document.getElementById('status-area');
+      const loadingSpinner = document.getElementById('loading-spinner');
+      let currentPlaylist = [];
 
-      signInAnonymously(auth).catch((error) =>
-        console.error('Anonymous sign-in failed:', error)
-      );
+      // --- CORE FUNCTIONS ---
 
+      async function getPlaylist() {
+        loadingSpinner.classList.remove('hidden');
+        const cacheBuster = `?_=${new Date().getTime()}`;
+        const url = `https://res.cloudinary.com/${CLOUDINARY_CLOUD_NAME}/raw/upload/${PLAYLIST_PUBLIC_ID}.json${cacheBuster}`;
+        try {
+          const response = await fetch(url);
+          if (!response.ok) {
+            if (response.status === 404) return []; // File doesn't exist yet, return empty list
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+          return await response.json();
+        } catch (error) {
+          console.error('Could not fetch playlist:', error);
+          return []; // Return empty list on error
+        } finally {
+          loadingSpinner.classList.add('hidden');
+        }
+      }
+
+      async function savePlaylist(playlist) {
+        statusArea.textContent = 'Saving updated playlist...';
+        loadingSpinner.classList.remove('hidden');
+        const url = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/raw/upload`;
+        const jsonString = JSON.stringify(playlist, null, 2);
+        const blob = new Blob([jsonString], { type: 'application/json' });
+        const file = new File([blob], `${PLAYLIST_PUBLIC_ID}.json`);
+
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+        formData.append('public_id', PLAYLIST_PUBLIC_ID);
+
+        try {
+          const response = await fetch(url, { method: 'POST', body: formData });
+          const data = await response.json();
+          if (data.error) throw new Error(data.error.message);
+          statusArea.textContent = 'Playlist saved successfully!';
+        } catch (error) {
+          console.error('Could not save playlist:', error);
+          statusArea.textContent = 'Error saving playlist.';
+        } finally {
+          loadingSpinner.classList.add('hidden');
+          setTimeout(() => (statusArea.textContent = ''), 3000);
+        }
+      }
+
+      async function uploadVideoFile(file) {
+        statusArea.textContent = `Uploading ${file.name}...`;
+        loadingSpinner.classList.remove('hidden');
+        const url = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/video/upload`;
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+
+        try {
+          const response = await fetch(url, { method: 'POST', body: formData });
+          const data = await response.json();
+          if (data.error) throw new Error(data.error.message);
+          return data;
+        } catch (error) {
+          console.error(`Upload failed for ${file.name}:`, error);
+          statusArea.textContent = `Error uploading ${file.name}.`;
+          return null;
+        } finally {
+          loadingSpinner.classList.add('hidden');
+          setTimeout(() => (statusArea.textContent = ''), 3000);
+        }
+      }
+
+      async function loadAndRender() {
+        currentPlaylist = await getPlaylist();
+        renderVideos();
+        updateStats();
+      }
+
+      // --- EVENT HANDLERS ---
       fileInput.addEventListener('change', (e) => handleFiles(e.target.files));
       uploadSection.addEventListener('dragover', (e) => {
         e.preventDefault();
@@ -193,83 +238,56 @@
         handleFiles(e.dataTransfer.files);
       });
 
-      function handleFiles(files) {
+      async function handleFiles(files) {
         const videoFiles = Array.from(files).filter((file) =>
           file.type.startsWith('video/')
         );
         if (videoFiles.length === 0) return;
-        progressContainer.innerHTML = '';
-        progressContainer.classList.remove('hidden');
-        videoFiles.forEach(uploadFile);
-      }
 
-      function uploadFile(file) {
-        const fileId = `file-${Date.now()}-${Math.random()
-          .toString(36)
-          .substring(2)}`;
-        const storageRef = ref(storage, `videos/${Date.now()}-${file.name}`);
-        const uploadTask = uploadBytesResumable(storageRef, file);
-        const progressElement = document.createElement('div');
-        progressElement.id = fileId;
-        progressElement.className =
-          'bg-white p-4 rounded-lg shadow-sm border mb-3';
-        progressElement.innerHTML = `
-                <div class="flex justify-between items-center"><p class="text-sm font-medium truncate w-2/3">${file.name}</p><p class="text-sm text-gray-500" id="${fileId}-status">Uploading...</p></div>
-                <div class="w-full bg-gray-200 rounded-full h-2.5 mt-2"><div id="${fileId}-bar" class="bg-yellow-400 h-2.5 rounded-full" style="width: 0%"></div></div>`;
-        progressContainer.appendChild(progressElement);
-        uploadTask.on(
-          'state_changed',
-          (snapshot) => {
-            const progress =
-              (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-            document.getElementById(`${fileId}-bar`).style.width =
-              progress + '%';
-          },
-          (error) => {
-            console.error('Upload failed:', error);
-            document.getElementById(`${fileId}-status`).textContent = 'Error!';
-            document
-              .getElementById(`${fileId}-bar`)
-              .classList.add('bg-red-500');
-          },
-          () => {
-            getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
-              addDoc(videosCollectionRef, {
-                name: file.name,
-                url: downloadURL,
-                storagePath: uploadTask.snapshot.ref.fullPath,
-                size: file.size,
-                type: file.type,
-                createdAt: serverTimestamp(),
-              }).then(() => {
-                document.getElementById(`${fileId}-status`).textContent =
-                  'Complete!';
-                document
-                  .getElementById(`${fileId}-bar`)
-                  .classList.add('bg-green-500');
-              });
+        for (const file of videoFiles) {
+          const videoData = await uploadVideoFile(file);
+          if (videoData) {
+            currentPlaylist.push({
+              id: videoData.public_id,
+              name: videoData.original_filename || file.name,
+              url: videoData.secure_url,
+              size: videoData.bytes,
+              createdAt: new Date().toISOString(),
             });
           }
-        );
+        }
+        // Save the entire updated playlist once after all uploads are done
+        await savePlaylist(currentPlaylist);
+        // Re-render the list from the newly saved playlist
+        await loadAndRender();
       }
 
-      onSnapshot(videosCollectionRef, (snapshot) => {
-        videos = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-        videos.sort(
-          (a, b) =>
-            (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0)
-        );
-        renderVideos();
-        updateStats();
+      videoListContainer.addEventListener('click', async (e) => {
+        const deleteBtn = e.target.closest('.delete-btn');
+        if (deleteBtn) {
+          const videoId = deleteBtn.dataset.id;
+          if (
+            confirm(
+              'Are you sure you want to remove this video from the playlist?'
+            )
+          ) {
+            currentPlaylist = currentPlaylist.filter(
+              (video) => video.id !== videoId
+            );
+            await savePlaylist(currentPlaylist);
+            await loadAndRender();
+          }
+        }
       });
 
+      // --- UI RENDERING ---
       function renderVideos() {
-        const listContainer = document.getElementById('videoListContainer');
-        if (videos.length === 0) {
-          listContainer.innerHTML = `<p class="text-center text-gray-500 py-10">No videos uploaded yet.</p>`;
+        if (currentPlaylist.length === 0) {
+          videoListContainer.innerHTML = `<p class="text-center text-gray-500 py-10">No videos uploaded yet.</p>`;
           return;
         }
-        listContainer.innerHTML = videos
+        videoListContainer.innerHTML = [...currentPlaylist]
+          .reverse()
           .map(
             (video) => `
                 <div class="flex items-center justify-between p-4 border-b border-gray-200 last:border-b-0">
@@ -277,50 +295,21 @@
                       video.name
                     }</p><p class="text-sm text-gray-500">${formatFileSize(
               video.size
-            )} • Uploaded: ${
+            )} • Uploaded: ${new Date(
               video.createdAt
-                ? new Date(video.createdAt.toDate()).toLocaleString()
-                : 'Just now'
-            }</p></div>
+            ).toLocaleString()}</p></div>
                     <button class="delete-btn text-gray-400 hover:text-red-600 transition-colors" data-id="${
                       video.id
-                    }" data-path="${
-              video.storagePath
-            }"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button>
+                    }"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button>
                 </div>`
           )
           .join('');
       }
 
-      document
-        .getElementById('videoListContainer')
-        .addEventListener('click', (e) => {
-          const deleteBtn = e.target.closest('.delete-btn');
-          if (deleteBtn) {
-            const videoId = deleteBtn.dataset.id;
-            const storagePath = deleteBtn.dataset.path;
-            if (
-              confirm('Are you sure you want to permanently delete this video?')
-            ) {
-              deleteVideo(videoId, storagePath);
-            }
-          }
-        });
-
-      async function deleteVideo(id, storagePath) {
-        try {
-          await deleteDoc(doc(db, 'videos', id));
-          const storageRef = ref(storage, storagePath);
-          await deleteObject(storageRef);
-        } catch (error) {
-          console.error('Error deleting video:', error);
-          alert('Failed to delete video.');
-        }
-      }
-
       function updateStats() {
-        document.getElementById('videoCount').textContent = videos.length;
-        const totalBytes = videos.reduce(
+        document.getElementById('videoCount').textContent =
+          currentPlaylist.length;
+        const totalBytes = currentPlaylist.reduce(
           (sum, video) => sum + (video.size || 0),
           0
         );
@@ -338,6 +327,9 @@
           ['Bytes', 'KB', 'MB', 'GB', 'TB'][i]
         );
       }
+
+      // Initial Load
+      loadAndRender();
     </script>
   </body>
 </html>

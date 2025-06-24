@@ -138,30 +138,12 @@
       </div>
     </div>
 
-    <script type="module">
-      import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js';
-      import {
-        getAuth,
-        signInAnonymously,
-      } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
-      import {
-        getFirestore,
-        collection,
-        onSnapshot,
-      } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
-
-      // --- STEP 1: PASTE YOUR FIREBASE CONFIG HERE ---
-      // This MUST be the same config object as in your admin.html file.
-      const firebaseConfig = {
-        apiKey: 'AIzaSyBc9HvS4ihm9UnI9Rk65SnrDB5rDMIf4WI',
-        authDomain: 'eni-display-system.firebaseapp.com',
-        projectId: 'eni-display-system',
-        storageBucket: 'eni-display-system.firebasestorage.app',
-        messagingSenderId: '62167080833',
-        appId: '1:62167080833:web:e6e4956b8a184ec25c9280',
-        measurementId: 'G-QHXJ85VP0D',
-      };
+    <script>
+      // --- STEP 1: PASTE YOUR CLOUDINARY CLOUD NAME ---
+      const CLOUDINARY_CLOUD_NAME = 'tekstore';
       // ---------------------------------------------
+
+      const PLAYLIST_PUBLIC_ID = 'eni_video_playlist';
 
       // --- UI ELEMENTS and STATE ---
       let videos = [];
@@ -176,49 +158,30 @@
       const playPauseBtn = document.getElementById('playPauseBtn');
       const muteBtn = document.getElementById('muteBtn');
 
-      // --- FIREBASE INITIALIZATION ---
-      try {
-        if (
-          !firebaseConfig.apiKey ||
-          firebaseConfig.apiKey === 'YOUR_API_KEY'
-        ) {
-          throw new Error('Firebase config is not set.');
+      async function fetchPlaylist() {
+        const cacheBuster = `?_=${new Date().getTime()}`;
+        const url = `https://res.cloudinary.com/${CLOUDINARY_CLOUD_NAME}/raw/upload/${PLAYLIST_PUBLIC_ID}.json${cacheBuster}`;
+        try {
+          if (
+            !CLOUDINARY_CLOUD_NAME ||
+            CLOUDINARY_CLOUD_NAME === 'YOUR_CLOUD_NAME'
+          ) {
+            throw new Error('Cloudinary Cloud Name is not configured.');
+          }
+          const response = await fetch(url);
+          if (!response.ok) {
+            if (response.status === 404) return []; // Playlist doesn't exist
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+          const playlist = await response.json();
+          videos = Array.isArray(playlist) ? playlist : [];
+          handlePlaylistUpdate();
+        } catch (error) {
+          console.error('Failed to fetch playlist:', error);
+          showMessage('Could not load video list', error.message);
         }
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-        const videosCollectionRef = collection(db, 'videos');
-
-        signInAnonymously(auth)
-          .then(() => {
-            onSnapshot(
-              videosCollectionRef,
-              (snapshot) => {
-                videos = snapshot.docs
-                  .map((doc) => doc.data())
-                  .sort(
-                    (a, b) =>
-                      (a.createdAt?.toMillis() || 0) -
-                      (b.createdAt?.toMillis() || 0)
-                  );
-                handlePlaylistUpdate();
-              },
-              (error) => {
-                showMessage('Error: Could not retrieve video list.');
-              }
-            );
-          })
-          .catch((error) => {
-            showMessage('Error: Connection to service failed.');
-          });
-      } catch (error) {
-        showMessage(
-          'Configuration Error',
-          'Please set your Firebase config in the HTML file.'
-        );
       }
 
-      // --- PLAYER LOGIC ---
       function handlePlaylistUpdate() {
         if (videos.length === 0) {
           showMessage(
@@ -231,9 +194,9 @@
         mainVideo.style.display = 'block';
         videoInfo.style.display = 'block';
         controls.style.display = 'flex';
-        const currentSrcBase = mainVideo.currentSrc.split('?')[0];
+        const currentSrcBase = mainVideo.currentSrc;
         const isPlayingKnownVideo = videos.some(
-          (v) => v.url.split('?')[0] === currentSrcBase
+          (v) => v.url === currentSrcBase
         );
         if (!isPlayingKnownVideo) {
           loadVideo(0);
@@ -297,6 +260,11 @@
         mainVideo.muted = isMuted;
         muteBtn.textContent = isMuted ? '🔇' : '🔊';
       };
+
+      // Initial fetch
+      fetchPlaylist();
+      // Refresh the playlist every 2 minutes to check for changes
+      setInterval(fetchPlaylist, 2 * 60 * 1000);
     </script>
   </body>
 </html>
