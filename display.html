@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Reception Display</title>
     <style>
-      /* Your existing CSS remains unchanged */
       * {
         margin: 0;
         padding: 0;
@@ -24,43 +23,23 @@
         display: flex;
         align-items: center;
         justify-content: center;
+        background-color: #000;
       }
       .main-video {
         width: 100%;
         height: 100%;
-        object-fit: cover;
+        object-fit: contain;
       }
-      .no-videos {
+      .message-screen {
         text-align: center;
         color: white;
         font-size: 2rem;
+        padding: 2rem;
       }
-      .no-videos-icon {
+      .message-icon {
         font-size: 8rem;
         margin-bottom: 2rem;
         opacity: 0.3;
-      }
-      .no-videos p {
-        opacity: 0.6;
-        margin-bottom: 1rem;
-      }
-      .loading {
-        text-align: center;
-        color: white;
-        font-size: 1.5rem;
-      }
-      .loading-icon {
-        font-size: 4rem;
-        margin-bottom: 1rem;
-        animation: spin 2s linear infinite;
-      }
-      @keyframes spin {
-        0% {
-          transform: rotate(0deg);
-        }
-        100% {
-          transform: rotate(360deg);
-        }
       }
       .controls {
         position: absolute;
@@ -106,14 +85,6 @@
       .display-container:hover .video-info {
         opacity: 1;
       }
-      .video-title {
-        font-weight: bold;
-        margin-bottom: 5px;
-      }
-      .video-counter {
-        font-size: 0.9rem;
-        opacity: 0.7;
-      }
       .progress-bar {
         position: absolute;
         bottom: 0;
@@ -124,39 +95,17 @@
       }
       .progress-fill {
         height: 100%;
-        background: #007bff;
+        background: #ffc72c;
         width: 0%;
         transition: width 0.1s ease;
-      }
-      .refresh-notice {
-        position: absolute;
-        top: 20px;
-        right: 20px;
-        background: rgba(0, 0, 0, 0.7);
-        color: white;
-        padding: 10px 15px;
-        border-radius: 15px;
-        font-size: 0.8rem;
-        opacity: 0;
-        transition: opacity 0.3s ease;
-      }
-      .display-container:hover .refresh-notice {
-        opacity: 1;
       }
     </style>
   </head>
   <body>
     <div class="display-container" id="displayContainer">
-      <div id="loadingScreen" class="loading">
-        <div class="loading-icon">⟳</div>
-        <p>Loading videos...</p>
-      </div>
-      <div id="noVideosScreen" class="no-videos" style="display: none">
-        <div class="no-videos-icon">📺</div>
-        <p>No videos available</p>
-        <p style="font-size: 1rem">
-          Please upload videos using the admin panel
-        </p>
+      <div id="messageScreen" class="message-screen">
+        <div id="messageIcon" class="message-icon">📺</div>
+        <p id="messageText">Connecting to service...</p>
       </div>
       <video
         id="mainVideo"
@@ -164,147 +113,175 @@
         style="display: none"
         autoplay
         muted
+        playsinline
       ></video>
       <div class="video-info" id="videoInfo" style="display: none">
-        <div class="video-title" id="videoTitle"></div>
-        <div class="video-counter" id="videoCounter"></div>
+        <div class="font-bold" id="videoTitle"></div>
+        <div class="text-sm opacity-70" id="videoCounter"></div>
       </div>
       <div class="controls" id="controls" style="display: none">
-        <button class="control-btn" onclick="previousVideo()" title="Previous">
-          ⏮️</button
-        ><button
+        <button class="control-btn" onclick="previousVideo()">⏮️</button>
+        <button
           class="control-btn"
-          onclick="togglePlayPause()"
           id="playPauseBtn"
-          title="Play/Pause"
+          onclick="togglePlayPause()"
         >
-          ⏸️</button
-        ><button class="control-btn" onclick="nextVideo()" title="Next">
-          ⏭️</button
-        ><button
-          class="control-btn"
-          onclick="toggleMute()"
-          id="muteBtn"
-          title="Mute/Unmute"
-        >
-          🔊</button
-        ><button class="control-btn" onclick="refreshVideos()" title="Refresh">
-          🔄
+          ⏸️
+        </button>
+        <button class="control-btn" onclick="nextVideo()">⏭️</button>
+        <button class="control-btn" id="muteBtn" onclick="toggleMute()">
+          🔇
         </button>
       </div>
       <div class="progress-bar">
         <div class="progress-fill" id="progressFill"></div>
       </div>
-      <div class="refresh-notice">
-        Last updated: <span id="lastUpdate">Never</span>
-      </div>
     </div>
 
-    <script src="db.js"></script>
-    <script>
+    <script type="module">
+      import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js';
+      import {
+        getAuth,
+        signInAnonymously,
+      } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
+      import {
+        getFirestore,
+        collection,
+        onSnapshot,
+      } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
+
+      // --- STEP 1: PASTE YOUR FIREBASE CONFIG HERE ---
+      // This MUST be the same config object as in your admin.html file.
+      const firebaseConfig = {
+        apiKey: 'AIzaSyBc9HvS4ihm9UnI9Rk65SnrDB5rDMIf4WI',
+        authDomain: 'eni-display-system.firebaseapp.com',
+        projectId: 'eni-display-system',
+        storageBucket: 'eni-display-system.firebasestorage.app',
+        messagingSenderId: '62167080833',
+        appId: '1:62167080833:web:e6e4956b8a184ec25c9280',
+        measurementId: 'G-QHXJ85VP0D',
+      };
+      // ---------------------------------------------
+
+      // --- UI ELEMENTS and STATE ---
       let videos = [];
       let currentVideoIndex = 0;
       let isPlaying = true;
-      let isMuted = true; // Start muted for autoplay
-      let currentObjectUrl = null; // To keep track of the temporary video URL
-
-      // DOM elements
+      let isMuted = true;
       const mainVideo = document.getElementById('mainVideo');
-      const loadingScreen = document.getElementById('loadingScreen');
-      const noVideosScreen = document.getElementById('noVideosScreen');
+      const messageScreen = document.getElementById('messageScreen');
+      const messageText = document.getElementById('messageText');
       const videoInfo = document.getElementById('videoInfo');
       const controls = document.getElementById('controls');
-      const videoTitle = document.getElementById('videoTitle');
-      const videoCounter = document.getElementById('videoCounter');
-      const progressFill = document.getElementById('progressFill');
       const playPauseBtn = document.getElementById('playPauseBtn');
       const muteBtn = document.getElementById('muteBtn');
-      const lastUpdate = document.getElementById('lastUpdate');
 
-      // Load videos from IndexedDB
-      async function refreshVideos() {
-        try {
-          const storedVideos = await getAllVideos();
-          videos = storedVideos.sort((a, b) => a.id - b.id); // Ensure consistent order
-
-          if (videos.length > 0) {
-            setupPlayback();
-          } else {
-            showNoVideos();
-          }
-        } catch (error) {
-          console.error('Error loading videos from DB:', error);
-          showNoVideos();
+      // --- FIREBASE INITIALIZATION ---
+      try {
+        if (
+          !firebaseConfig.apiKey ||
+          firebaseConfig.apiKey === 'YOUR_API_KEY'
+        ) {
+          throw new Error('Firebase config is not set.');
         }
-        document.getElementById('lastUpdate').textContent =
-          new Date().toLocaleTimeString();
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const videosCollectionRef = collection(db, 'videos');
+
+        signInAnonymously(auth)
+          .then(() => {
+            onSnapshot(
+              videosCollectionRef,
+              (snapshot) => {
+                videos = snapshot.docs
+                  .map((doc) => doc.data())
+                  .sort(
+                    (a, b) =>
+                      (a.createdAt?.toMillis() || 0) -
+                      (b.createdAt?.toMillis() || 0)
+                  );
+                handlePlaylistUpdate();
+              },
+              (error) => {
+                showMessage('Error: Could not retrieve video list.');
+              }
+            );
+          })
+          .catch((error) => {
+            showMessage('Error: Connection to service failed.');
+          });
+      } catch (error) {
+        showMessage(
+          'Configuration Error',
+          'Please set your Firebase config in the HTML file.'
+        );
       }
 
-      function showNoVideos() {
-        loadingScreen.style.display = 'none';
-        noVideosScreen.style.display = 'block';
-        mainVideo.style.display = 'none';
-        videoInfo.style.display = 'none';
-        controls.style.display = 'none';
-      }
-
-      function setupPlayback() {
-        loadingScreen.style.display = 'none';
-        noVideosScreen.style.display = 'none';
+      // --- PLAYER LOGIC ---
+      function handlePlaylistUpdate() {
+        if (videos.length === 0) {
+          showMessage(
+            'No videos available.',
+            'Please upload videos using the admin panel.'
+          );
+          return;
+        }
+        messageScreen.style.display = 'none';
         mainVideo.style.display = 'block';
         videoInfo.style.display = 'block';
         controls.style.display = 'flex';
-        loadVideo(currentVideoIndex);
+        const currentSrcBase = mainVideo.currentSrc.split('?')[0];
+        const isPlayingKnownVideo = videos.some(
+          (v) => v.url.split('?')[0] === currentSrcBase
+        );
+        if (!isPlayingKnownVideo) {
+          loadVideo(0);
+        }
+      }
+
+      function showMessage(text, subtext = '') {
+        mainVideo.style.display = 'none';
+        videoInfo.style.display = 'none';
+        controls.style.display = 'none';
+        messageScreen.style.display = 'flex';
+        messageScreen.style.flexDirection = 'column';
+        messageText.innerHTML = `${text}${
+          subtext
+            ? `<br><p style="font-size: 1rem; opacity: 0.6; margin-top: 1rem;">${subtext}</p>`
+            : ''
+        }`;
       }
 
       function loadVideo(index) {
         if (videos.length === 0) return;
-
         currentVideoIndex = (index + videos.length) % videos.length;
         const video = videos[currentVideoIndex];
-
-        // IMPORTANT: When we get a file from IndexedDB, it's a Blob/File object.
-        // We need to create a temporary URL to play it in the <video> tag.
-        if (currentObjectUrl) {
-          URL.revokeObjectURL(currentObjectUrl); // Clean up the previous temporary URL to prevent memory leaks
-        }
-        currentObjectUrl = URL.createObjectURL(video.file);
-        mainVideo.src = currentObjectUrl;
-
-        videoTitle.textContent = video.name;
-        videoCounter.textContent = `${currentVideoIndex + 1} of ${
-          videos.length
-        }`;
-        mainVideo.muted = isMuted; // Set mute state
-
-        mainVideo.onloadedmetadata = () => {
-          if (isPlaying) {
-            mainVideo.play().catch((e) => {
-              console.log('Autoplay failed, user interaction required');
-              isPlaying = false;
-              playPauseBtn.textContent = '▶️';
-            });
-          }
-        };
+        mainVideo.src = video.url;
+        document.getElementById('videoTitle').textContent = video.name;
+        document.getElementById('videoCounter').textContent = `${
+          currentVideoIndex + 1
+        } of ${videos.length}`;
+        if (isPlaying)
+          mainVideo.play().catch((e) => {
+            isPlaying = false;
+            playPauseBtn.textContent = '▶️';
+          });
       }
 
-      mainVideo.onended = () => nextVideo();
+      mainVideo.onended = () => loadVideo(currentVideoIndex + 1);
       mainVideo.ontimeupdate = () => {
-        if (mainVideo.duration) {
-          progressFill.style.width = `${
+        if (mainVideo.duration)
+          document.getElementById('progressFill').style.width = `${
             (mainVideo.currentTime / mainVideo.duration) * 100
           }%`;
-        }
       };
+      mainVideo.onerror = () =>
+        setTimeout(() => loadVideo(currentVideoIndex + 1), 2000);
 
-      function nextVideo() {
-        loadVideo(currentVideoIndex + 1);
-      }
-      function previousVideo() {
-        loadVideo(currentVideoIndex - 1);
-      }
-
-      function togglePlayPause() {
+      window.nextVideo = () => loadVideo(currentVideoIndex + 1);
+      window.previousVideo = () => loadVideo(currentVideoIndex - 1);
+      window.togglePlayPause = () => {
         if (mainVideo.paused) {
           mainVideo.play();
           playPauseBtn.textContent = '⏸️';
@@ -314,19 +291,12 @@
           playPauseBtn.textContent = '▶️';
           isPlaying = false;
         }
-      }
-
-      function toggleMute() {
+      };
+      window.toggleMute = () => {
         isMuted = !isMuted;
         mainVideo.muted = isMuted;
         muteBtn.textContent = isMuted ? '🔇' : '🔊';
-      }
-
-      // Auto-refresh every 5 minutes
-      setInterval(refreshVideos, 5 * 60 * 1000);
-
-      // Initial load
-      refreshVideos();
+      };
     </script>
   </body>
 </html>
