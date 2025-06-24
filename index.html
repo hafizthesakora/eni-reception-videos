@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Eni Ghana - Corporate Display System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      body {
+        font-family: 'Inter', sans-serif;
+      }
+      .eni-yellow {
+        color: #ffc72c;
+      }
+      .bg-eni-yellow {
+        background-color: #ffc72c;
+      }
+      .bg-eni-yellow:hover {
+        background-color: #fabe00;
+      }
+      .hero-bg {
+        /* --- NEW BRIGHT BACKGROUND IMAGE --- */
+        background: linear-gradient(
+            rgba(255, 255, 255, 0.5),
+            rgba(255, 255, 255, 0.5)
+          ),
+          url('https://images.pexels.com/photos/260689/pexels-photo-260689.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2');
+        background-size: cover;
+        background-position: center;
+      }
+    </style>
+  </head>
+  <body class="bg-gray-50 text-gray-800">
+    <!-- Header -->
+    <header class="bg-white shadow-md sticky top-0 z-50">
+      <nav
+        class="container mx-auto px-6 py-4 flex justify-between items-center"
+      >
+        <div class="flex items-center space-x-4">
+          <!-- Make sure you have a file named 'eni_logo.png' in the same folder -->
+          <img
+            src="logo 1.svg"
+            alt="Eni Ghana Logo"
+            class="h-10 w-auto"
+            onerror="this.onerror=null;this.src='https://placehold.co/150x50/ffffff/000000?text=Eni+Logo';"
+          />
+          <span class="text-xl font-semibold text-gray-900">Ghana</span>
+        </div>
+        <div class="text-sm text-gray-500">Corporate Display System</div>
+      </nav>
+    </header>
+
+    <!-- Hero Section -->
+    <main class="hero-bg">
+      <div
+        class="container mx-auto px-6 py-24 md:py-32 text-center text-gray-900"
+      >
+        <h1 class="text-4xl md:text-6xl font-bold leading-tight mb-4">
+          Corporate Display Management
+        </h1>
+        <p class="text-lg md:text-xl text-gray-700 max-w-3xl mx-auto mb-8">
+          A dedicated platform for External Affairs and HR to manage video
+          content for public-facing displays.
+        </p>
+      </div>
+    </main>
+
+    <!-- Action Links Section -->
+    <section class="bg-white">
+      <div class="container mx-auto px-6 py-16 md:py-20">
+        <h2 class="text-3xl font-bold text-center mb-4">
+          Choose Your Destination
+        </h2>
+        <p class="text-center text-gray-600 max-w-2xl mx-auto mb-12">
+          Select an option below to either manage the video content or to launch
+          the full-screen display.
+        </p>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+          <!-- Admin Panel Link - Now with PIN protection -->
+          <a
+            href="#"
+            id="manageVideosLink"
+            class="bg-gray-50 border border-gray-200 p-8 rounded-lg shadow-sm hover:shadow-xl hover:-translate-y-2 transition-all duration-300 ease-in-out group"
+          >
+            <div
+              class="flex items-center justify-center h-16 w-16 rounded-full bg-yellow-100 mb-6 group-hover:bg-eni-yellow transition-colors duration-300"
+            >
+              <svg
+                class="h-8 w-8 text-yellow-600 group-hover:text-white"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+                />
+              </svg>
+            </div>
+            <h3 class="text-2xl font-bold mb-3">Manage Videos</h3>
+            <p class="text-gray-600 mb-4">
+              Upload, view, and delete videos. This portal is for authorized
+              External Affairs and HR personnel.
+            </p>
+            <span class="font-semibold text-yellow-600 group-hover:underline">
+              Go to Admin Panel &rarr;
+            </span>
+          </a>
+
+          <!-- Display Interface Link -->
+          <a
+            href="display.html"
+            target="_blank"
+            class="bg-gray-50 border border-gray-200 p-8 rounded-lg shadow-sm hover:shadow-xl hover:-translate-y-2 transition-all duration-300 ease-in-out group"
+          >
+            <div
+              class="flex items-center justify-center h-16 w-16 rounded-full bg-yellow-100 mb-6 group-hover:bg-eni-yellow transition-colors duration-300"
+            >
+              <svg
+                class="h-8 w-8 text-yellow-600 group-hover:text-white"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                />
+              </svg>
+            </div>
+            <h3 class="text-2xl font-bold mb-3">Launch Display</h3>
+            <p class="text-gray-600 mb-4">
+              Open the full-screen video player. Use this link for reception TVs
+              and public displays.
+            </p>
+            <span class="font-semibold text-yellow-600 group-hover:underline">
+              Open Display Interface &rarr;
+            </span>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-gray-100 border-t border-gray-200">
+      <div class="container mx-auto px-6 py-6 text-center text-gray-500">
+        <p>
+          &copy; 2025 Eni Ghana Exploration & Production Ltd. All Rights
+          Reserved.
+        </p>
+        <p class="text-xs mt-2">
+          ICT Internal Corporate Application. For authorized use only.
+        </p>
+      </div>
+    </footer>
+
+    <!-- PIN Modal -->
+    <div
+      id="pinModal"
+      class="hidden fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50 transition-opacity duration-300"
+    >
+      <div class="bg-white rounded-lg shadow-2xl p-8 w-full max-w-sm mx-4">
+        <h2 class="text-2xl font-bold text-center mb-4 text-gray-900">
+          Enter PIN Code
+        </h2>
+        <p class="text-center text-gray-600 mb-6">
+          Enter the PIN to access the Admin Panel.
+        </p>
+        <form id="pinForm">
+          <input
+            type="password"
+            id="pinInput"
+            class="w-full bg-gray-100 border-2 border-gray-300 rounded-md p-3 text-center text-lg tracking-[.5em] focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500"
+            placeholder="••••"
+            maxlength="4"
+            autocomplete="off"
+          />
+          <p
+            id="pinError"
+            class="text-red-600 text-sm text-center mt-2 h-5"
+          ></p>
+          <button
+            type="submit"
+            class="w-full bg-eni-yellow text-black font-bold py-3 rounded-md mt-4 hover:bg-yellow-400 transition-colors duration-300"
+          >
+            Authorize
+          </button>
+        </form>
+        <button
+          id="closeModal"
+          class="w-full text-gray-500 font-semibold py-3 rounded-md mt-2 hover:bg-gray-200 transition-colors duration-300"
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+
+    <script>
+      // --- JAVASCRIPT FOR PIN MODAL ---
+      const manageLink = document.getElementById('manageVideosLink');
+      const pinModal = document.getElementById('pinModal');
+      const closeModalBtn = document.getElementById('closeModal');
+      const pinForm = document.getElementById('pinForm');
+      const pinInput = document.getElementById('pinInput');
+      const pinError = document.getElementById('pinError');
+
+      const correctPin = '9987';
+
+      // Function to show the modal
+      function showModal() {
+        pinModal.classList.remove('hidden');
+      }
+
+      // Function to hide the modal
+      function hideModal() {
+        pinModal.classList.add('hidden');
+        pinInput.value = ''; // Clear input on close
+        pinError.textContent = ''; // Clear error message
+      }
+
+      // Event listener for the "Manage Videos" link
+      manageLink.addEventListener('click', (event) => {
+        event.preventDefault(); // Prevent default link behavior
+        showModal();
+      });
+
+      // Event listener for the close button
+      closeModalBtn.addEventListener('click', hideModal);
+
+      // Close modal if user clicks outside of the dialog box
+      pinModal.addEventListener('click', (event) => {
+        if (event.target === pinModal) {
+          hideModal();
+        }
+      });
+
+      // Event listener for the form submission
+      pinForm.addEventListener('submit', (event) => {
+        event.preventDefault();
+        const enteredPin = pinInput.value;
+
+        if (enteredPin === correctPin) {
+          // If PIN is correct, navigate to the admin page
+          window.location.href = 'upload.html';
+        } else {
+          // If PIN is incorrect, show an error message
+          pinError.textContent = 'Invalid PIN. Please try again.';
+          pinInput.value = ''; // Clear the input for security
+          // Add a small shake animation for effect
+          pinModal.querySelector('div').classList.add('animate-shake');
+          setTimeout(() => {
+            pinModal.querySelector('div').classList.remove('animate-shake');
+          }, 500);
+        }
+      });
+
+      // Add a simple shake animation to Tailwind if it doesn't exist
+      if (!document.getElementById('tailwind-shake-animation')) {
+        const style = document.createElement('style');
+        style.id = 'tailwind-shake-animation';
+        style.innerHTML = `
+            @keyframes shake {
+                10%, 90% { transform: translate3d(-1px, 0, 0); }
+                20%, 80% { transform: translate3d(2px, 0, 0); }
+                30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+                40%, 60% { transform: translate3d(4px, 0, 0); }
+            }
+            .animate-shake {
+                animation: shake 0.5s ease-in-out;
+            }`;
+        document.head.appendChild(style);
+      }
+    </script>
+  </body>
+</html>
