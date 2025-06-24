@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Reception Display</title>
+    <style>
+      /* Your existing CSS remains unchanged */
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        background: #000;
+        font-family: 'Arial', sans-serif;
+        overflow: hidden;
+        cursor: none;
+      }
+      .display-container {
+        width: 100vw;
+        height: 100vh;
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .main-video {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+      .no-videos {
+        text-align: center;
+        color: white;
+        font-size: 2rem;
+      }
+      .no-videos-icon {
+        font-size: 8rem;
+        margin-bottom: 2rem;
+        opacity: 0.3;
+      }
+      .no-videos p {
+        opacity: 0.6;
+        margin-bottom: 1rem;
+      }
+      .loading {
+        text-align: center;
+        color: white;
+        font-size: 1.5rem;
+      }
+      .loading-icon {
+        font-size: 4rem;
+        margin-bottom: 1rem;
+        animation: spin 2s linear infinite;
+      }
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+      .controls {
+        position: absolute;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(0, 0, 0, 0.7);
+        padding: 10px 20px;
+        border-radius: 30px;
+        display: flex;
+        gap: 15px;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+      }
+      .display-container:hover .controls {
+        opacity: 1;
+      }
+      .control-btn {
+        background: rgba(255, 255, 255, 0.2);
+        color: white;
+        border: none;
+        padding: 10px;
+        border-radius: 50%;
+        cursor: pointer;
+        font-size: 1rem;
+        transition: background 0.3s ease;
+      }
+      .control-btn:hover {
+        background: rgba(255, 255, 255, 0.4);
+      }
+      .video-info {
+        position: absolute;
+        top: 20px;
+        left: 20px;
+        background: rgba(0, 0, 0, 0.7);
+        color: white;
+        padding: 10px 20px;
+        border-radius: 20px;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+        max-width: 300px;
+      }
+      .display-container:hover .video-info {
+        opacity: 1;
+      }
+      .video-title {
+        font-weight: bold;
+        margin-bottom: 5px;
+      }
+      .video-counter {
+        font-size: 0.9rem;
+        opacity: 0.7;
+      }
+      .progress-bar {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        height: 4px;
+        background: rgba(255, 255, 255, 0.2);
+      }
+      .progress-fill {
+        height: 100%;
+        background: #007bff;
+        width: 0%;
+        transition: width 0.1s ease;
+      }
+      .refresh-notice {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        background: rgba(0, 0, 0, 0.7);
+        color: white;
+        padding: 10px 15px;
+        border-radius: 15px;
+        font-size: 0.8rem;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+      }
+      .display-container:hover .refresh-notice {
+        opacity: 1;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="display-container" id="displayContainer">
+      <div id="loadingScreen" class="loading">
+        <div class="loading-icon">⟳</div>
+        <p>Loading videos...</p>
+      </div>
+      <div id="noVideosScreen" class="no-videos" style="display: none">
+        <div class="no-videos-icon">📺</div>
+        <p>No videos available</p>
+        <p style="font-size: 1rem">
+          Please upload videos using the admin panel
+        </p>
+      </div>
+      <video
+        id="mainVideo"
+        class="main-video"
+        style="display: none"
+        autoplay
+        muted
+      ></video>
+      <div class="video-info" id="videoInfo" style="display: none">
+        <div class="video-title" id="videoTitle"></div>
+        <div class="video-counter" id="videoCounter"></div>
+      </div>
+      <div class="controls" id="controls" style="display: none">
+        <button class="control-btn" onclick="previousVideo()" title="Previous">
+          ⏮️</button
+        ><button
+          class="control-btn"
+          onclick="togglePlayPause()"
+          id="playPauseBtn"
+          title="Play/Pause"
+        >
+          ⏸️</button
+        ><button class="control-btn" onclick="nextVideo()" title="Next">
+          ⏭️</button
+        ><button
+          class="control-btn"
+          onclick="toggleMute()"
+          id="muteBtn"
+          title="Mute/Unmute"
+        >
+          🔊</button
+        ><button class="control-btn" onclick="refreshVideos()" title="Refresh">
+          🔄
+        </button>
+      </div>
+      <div class="progress-bar">
+        <div class="progress-fill" id="progressFill"></div>
+      </div>
+      <div class="refresh-notice">
+        Last updated: <span id="lastUpdate">Never</span>
+      </div>
+    </div>
+
+    <script src="db.js"></script>
+    <script>
+      let videos = [];
+      let currentVideoIndex = 0;
+      let isPlaying = true;
+      let isMuted = true; // Start muted for autoplay
+      let currentObjectUrl = null; // To keep track of the temporary video URL
+
+      // DOM elements
+      const mainVideo = document.getElementById('mainVideo');
+      const loadingScreen = document.getElementById('loadingScreen');
+      const noVideosScreen = document.getElementById('noVideosScreen');
+      const videoInfo = document.getElementById('videoInfo');
+      const controls = document.getElementById('controls');
+      const videoTitle = document.getElementById('videoTitle');
+      const videoCounter = document.getElementById('videoCounter');
+      const progressFill = document.getElementById('progressFill');
+      const playPauseBtn = document.getElementById('playPauseBtn');
+      const muteBtn = document.getElementById('muteBtn');
+      const lastUpdate = document.getElementById('lastUpdate');
+
+      // Load videos from IndexedDB
+      async function refreshVideos() {
+        try {
+          const storedVideos = await getAllVideos();
+          videos = storedVideos.sort((a, b) => a.id - b.id); // Ensure consistent order
+
+          if (videos.length > 0) {
+            setupPlayback();
+          } else {
+            showNoVideos();
+          }
+        } catch (error) {
+          console.error('Error loading videos from DB:', error);
+          showNoVideos();
+        }
+        document.getElementById('lastUpdate').textContent =
+          new Date().toLocaleTimeString();
+      }
+
+      function showNoVideos() {
+        loadingScreen.style.display = 'none';
+        noVideosScreen.style.display = 'block';
+        mainVideo.style.display = 'none';
+        videoInfo.style.display = 'none';
+        controls.style.display = 'none';
+      }
+
+      function setupPlayback() {
+        loadingScreen.style.display = 'none';
+        noVideosScreen.style.display = 'none';
+        mainVideo.style.display = 'block';
+        videoInfo.style.display = 'block';
+        controls.style.display = 'flex';
+        loadVideo(currentVideoIndex);
+      }
+
+      function loadVideo(index) {
+        if (videos.length === 0) return;
+
+        currentVideoIndex = (index + videos.length) % videos.length;
+        const video = videos[currentVideoIndex];
+
+        // IMPORTANT: When we get a file from IndexedDB, it's a Blob/File object.
+        // We need to create a temporary URL to play it in the <video> tag.
+        if (currentObjectUrl) {
+          URL.revokeObjectURL(currentObjectUrl); // Clean up the previous temporary URL to prevent memory leaks
+        }
+        currentObjectUrl = URL.createObjectURL(video.file);
+        mainVideo.src = currentObjectUrl;
+
+        videoTitle.textContent = video.name;
+        videoCounter.textContent = `${currentVideoIndex + 1} of ${
+          videos.length
+        }`;
+        mainVideo.muted = isMuted; // Set mute state
+
+        mainVideo.onloadedmetadata = () => {
+          if (isPlaying) {
+            mainVideo.play().catch((e) => {
+              console.log('Autoplay failed, user interaction required');
+              isPlaying = false;
+              playPauseBtn.textContent = '▶️';
+            });
+          }
+        };
+      }
+
+      mainVideo.onended = () => nextVideo();
+      mainVideo.ontimeupdate = () => {
+        if (mainVideo.duration) {
+          progressFill.style.width = `${
+            (mainVideo.currentTime / mainVideo.duration) * 100
+          }%`;
+        }
+      };
+
+      function nextVideo() {
+        loadVideo(currentVideoIndex + 1);
+      }
+      function previousVideo() {
+        loadVideo(currentVideoIndex - 1);
+      }
+
+      function togglePlayPause() {
+        if (mainVideo.paused) {
+          mainVideo.play();
+          playPauseBtn.textContent = '⏸️';
+          isPlaying = true;
+        } else {
+          mainVideo.pause();
+          playPauseBtn.textContent = '▶️';
+          isPlaying = false;
+        }
+      }
+
+      function toggleMute() {
+        isMuted = !isMuted;
+        mainVideo.muted = isMuted;
+        muteBtn.textContent = isMuted ? '🔇' : '🔊';
+      }
+
+      // Auto-refresh every 5 minutes
+      setInterval(refreshVideos, 5 * 60 * 1000);
+
+      // Initial load
+      refreshVideos();
+    </script>
+  </body>
+</html>
