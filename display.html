@@ -160,7 +160,7 @@
 
       async function fetchPlaylist() {
         const cacheBuster = `?_=${new Date().getTime()}`;
-        const url = `https://res.cloudinary.com/${CLOUDINARY_CLOUD_NAME}/raw/upload/${PLAYLIST_PUBLIC_ID}.json${cacheBuster}`;
+        const url = `https://res.cloudinary.com/tekstore/raw/upload/${PLAYLIST_PUBLIC_ID}.json${cacheBuster}`;
         try {
           if (
             !CLOUDINARY_CLOUD_NAME ||
