@@ -12,7 +12,7 @@
       }
       body {
         background: #000;
-        font-family: 'Arial', sans-serif;
+        font-family: Arial, sans-serif;
         overflow: hidden;
         cursor: none;
       }
@@ -23,7 +23,7 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        background-color: #000;
+        background: #000;
       }
       .main-video {
         width: 100%;
@@ -32,7 +32,7 @@
       }
       .message-screen {
         text-align: center;
-        color: white;
+        color: #fff;
         font-size: 2rem;
         padding: 2rem;
       }
@@ -59,7 +59,7 @@
       }
       .control-btn {
         background: rgba(255, 255, 255, 0.2);
-        color: white;
+        color: #fff;
         border: none;
         padding: 10px;
         border-radius: 50%;
@@ -75,7 +75,7 @@
         top: 20px;
         left: 20px;
         background: rgba(0, 0, 0, 0.7);
-        color: white;
+        color: #fff;
         padding: 10px 20px;
         border-radius: 20px;
         opacity: 0;
@@ -96,12 +96,12 @@
       .progress-fill {
         height: 100%;
         background: #ffc72c;
-        width: 0%;
+        width: 0;
         transition: width 0.1s ease;
       }
       .retry-btn {
         background: #ffc72c;
-        color: black;
+        color: #000;
         border: none;
         padding: 10px 20px;
         border-radius: 25px;
@@ -138,8 +138,8 @@
         preload="metadata"
       ></video>
       <div class="video-info" id="videoInfo" style="display: none">
-        <div class="font-bold" id="videoTitle"></div>
-        <div class="text-sm opacity-70" id="videoCounter"></div>
+        <div id="videoTitle" class="font-bold"></div>
+        <div id="videoCounter" class="text-sm opacity-70"></div>
       </div>
       <div class="controls" id="controls" style="display: none">
         <button class="control-btn" onclick="previousVideo()">⏮️</button>
@@ -162,86 +162,64 @@
     </div>
 
     <script>
-      // --- STEP 1: PASTE YOUR CLOUDINARY CLOUD NAME ---
       const CLOUDINARY_CLOUD_NAME = 'tekstore';
-      // ---------------------------------------------
-
       const PLAYLIST_PUBLIC_ID = 'eni_video_playlist';
 
-      // --- UI ELEMENTS and STATE ---
-      let videos = [];
-      let currentVideoIndex = 0;
-      let isPlaying = false;
-      let isMuted = true;
-      let isLoading = false;
-      let retryCount = 0;
-      const maxRetries = 3;
+      let videos = [],
+        currentVideoIndex = 0,
+        isPlaying = false,
+        isMuted = true,
+        isLoading = false;
+      let retryCount = 0,
+        maxRetries = 3;
 
       const mainVideo = document.getElementById('mainVideo');
       const messageScreen = document.getElementById('messageScreen');
       const messageText = document.getElementById('messageText');
-      const messageIcon = document.getElementById('messageIcon');
+      const retryBtn = document.getElementById('retryBtn');
       const videoInfo = document.getElementById('videoInfo');
       const controls = document.getElementById('controls');
       const playPauseBtn = document.getElementById('playPauseBtn');
       const muteBtn = document.getElementById('muteBtn');
-      const retryBtn = document.getElementById('retryBtn');
+      const progressFill = document.getElementById('progressFill');
 
       async function fetchPlaylist() {
         if (isLoading) return;
         isLoading = true;
-
         try {
-          if (
-            !CLOUDINARY_CLOUD_NAME ||
-            CLOUDINARY_CLOUD_NAME === 'YOUR_CLOUD_NAME'
-          ) {
-            throw new Error('Cloudinary Cloud Name is not configured.');
-          }
-
-          const cacheBuster = `?_=${new Date().getTime()}`;
-          const url = `https://res.cloudinary.com/${CLOUDINARY_CLOUD_NAME}/raw/upload/${PLAYLIST_PUBLIC_ID}.json${cacheBuster}`;
-
-          showMessage('Loading playlist...', '');
-
-          const response = await fetch(url, {
-            method: 'GET',
-            headers: {
-              Accept: 'application/json',
-            },
+          if (!CLOUDINARY_CLOUD_NAME)
+            throw new Error('Cloudinary Cloud Name not set.');
+          showMessage('Loading playlist...');
+          const url = `https://res.cloudinary.com/${CLOUDINARY_CLOUD_NAME}/raw/upload/${PLAYLIST_PUBLIC_ID}?_=${Date.now()}`;
+          const res = await fetch(url, {
+            headers: { Accept: 'application/json' },
           });
-
-          if (!response.ok) {
-            if (response.status === 404) {
-              showMessage(
-                'No playlist found',
-                'Please upload videos using the admin panel.'
-              );
+          if (!res.ok) {
+            if (res.status === 404) {
+              showMessage('No playlist found', 'Upload via admin panel.');
               retryBtn.style.display = 'inline-block';
               return;
             }
-            throw new Error(`HTTP error! status: ${response.status}`);
+            throw new Error(`HTTP ${res.status}`);
           }
-
-          const playlist = await response.json();
-          videos = Array.isArray(playlist) ? playlist : [];
-          retryCount = 0; // Reset retry count on success
+          const list = await res.json();
+          videos = Array.isArray(list) ? list : [];
+          retryCount = 0;
           handlePlaylistUpdate();
-        } catch (error) {
-          console.error('Failed to fetch playlist:', error);
+        } catch (err) {
+          console.error('fetchPlaylist error', err);
           retryCount++;
-
           if (retryCount < maxRetries) {
             showMessage(
-              'Connection failed, retrying...',
-              `Attempt ${retryCount} of ${maxRetries}`
+              `Connection failed, retrying...`,
+              `Attempt ${retryCount}/${maxRetries}`
             );
             setTimeout(() => {
               isLoading = false;
               fetchPlaylist();
             }, 2000);
           } else {
-            showMessage('Could not load video list', error.message);
+            showMessage('Could not load video list', err.message);
             retryBtn.style.display = 'inline-block';
           }
         } finally {
@@ -251,95 +229,57 @@
 
       function handlePlaylistUpdate() {
         retryBtn.style.display = 'none';
-
         if (videos.length === 0) {
-          showMessage(
-            'No videos available',
-            'Please upload videos using the admin panel.'
-          );
+          showMessage('No videos available', 'Use the admin panel.');
           return;
         }
-
         messageScreen.style.display = 'none';
         mainVideo.style.display = 'block';
         videoInfo.style.display = 'block';
         controls.style.display = 'flex';
 
-        // Check if we need to load a new video
-        const currentSrc = mainVideo.currentSrc;
-        const isPlayingKnownVideo = videos.some((v) =>
-          currentSrc.includes(v.id)
-        );
-
-        if (!isPlayingKnownVideo || !currentSrc) {
-          loadVideo(0);
-        }
+        const src = mainVideo.currentSrc;
+        const known = videos.some((v) => src.includes(v.id));
+        if (!known) loadVideo(0);
       }
 
-      function showMessage(text, subtext = '') {
+      function showMessage(text, sub = '') {
         mainVideo.style.display = 'none';
         videoInfo.style.display = 'none';
         controls.style.display = 'none';
         messageScreen.style.display = 'flex';
-        messageScreen.style.flexDirection = 'column';
-        messageScreen.style.alignItems = 'center';
-        messageScreen.style.justifyContent = 'center';
-
         messageText.innerHTML = `${text}${
-          subtext
-            ? `<br><p style="font-size: 1rem; opacity: 0.6; margin-top: 1rem;">${subtext}</p>`
-            : ''
+          sub ? `<br><span style="opacity:.6;">${sub}</span>` : ''
         }`;
       }
 
-      function loadVideo(index) {
-        if (videos.length === 0) return;
-
-        currentVideoIndex = (index + videos.length) % videos.length;
-        const video = videos[currentVideoIndex];
-
-        console.log('Loading video:', video.name);
-
-        mainVideo.src = video.url;
-        document.getElementById('videoTitle').textContent = video.name;
+      function loadVideo(i) {
+        currentVideoIndex =
+          ((i % videos.length) + videos.length) % videos.length;
+        const v = videos[currentVideoIndex];
+        mainVideo.src = v.url;
+        document.getElementById('videoTitle').textContent = v.name;
         document.getElementById('videoCounter').textContent = `${
           currentVideoIndex + 1
         } of ${videos.length}`;
-
-        // Reset play state
         isPlaying = false;
         playPauseBtn.textContent = '▶️';
       }
 
-      // Video event listeners
-      mainVideo.addEventListener('loadedmetadata', () => {
-        console.log('Video metadata loaded');
-      });
-
       mainVideo.addEventListener('canplay', () => {
-        console.log('Video can play');
-        if (!isPlaying) {
-          startPlayback();
-        }
+        if (!isPlaying) startPlayback();
       });
-
-      mainVideo.addEventListener('ended', () => {
-        console.log('Video ended, loading next');
-        loadVideo(currentVideoIndex + 1);
-      });
-
-      mainVideo.addEventListener('error', (e) => {
-        console.error('Video error:', e);
-        setTimeout(() => {
-          console.log('Retrying next video due to error');
-          loadVideo(currentVideoIndex + 1);
-        }, 2000);
-      });
-
+      mainVideo.addEventListener('ended', () =>
+        loadVideo(currentVideoIndex + 1)
+      );
+      mainVideo.addEventListener('error', () =>
+        setTimeout(() => loadVideo(currentVideoIndex + 1), 2000)
+      );
       mainVideo.addEventListener('timeupdate', () => {
         if (mainVideo.duration) {
-          const progress = (mainVideo.currentTime / mainVideo.duration) * 100;
-          document.getElementById('progressFill').style.width = `${progress}%`;
+          progressFill.style.width = `${
+            (mainVideo.currentTime / mainVideo.duration) * 100
+          }%`;
         }
       });
 
@@ -349,71 +289,47 @@
           .then(() => {
             isPlaying = true;
             playPauseBtn.textContent = '⏸️';
-            console.log('Video started playing');
           })
-          .catch((error) => {
-            console.error('Play failed:', error);
-            isPlaying = false;
-            playPauseBtn.textContent = '▶️';
+          .catch((e) => {
+            console.error('Play failed', e);
           });
       }
-
-      // Control functions
-      window.nextVideo = () => {
-        console.log('Next video requested');
+      function nextVideo() {
         loadVideo(currentVideoIndex + 1);
-      };
-
-      window.previousVideo = () => {
-        console.log('Previous video requested');
+      }
+      function previousVideo() {
         loadVideo(currentVideoIndex - 1);
-      };
-
-      window.togglePlayPause = () => {
-        if (mainVideo.paused) {
-          startPlayback();
-        } else {
-          mainVideo.pause();
-          playPauseBtn.textContent = '▶️';
-          isPlaying = false;
-        }
-      };
-
-      window.toggleMute = () => {
+      }
+      function togglePlayPause() {
+        mainVideo.paused
+          ? startPlayback()
+          : (mainVideo.pause(),
+            (playPauseBtn.textContent = '▶️'),
+            (isPlaying = false));
+      }
+      function toggleMute() {
         isMuted = !isMuted;
         mainVideo.muted = isMuted;
         muteBtn.textContent = isMuted ? '🔇' : '🔊';
-      };
-
-      window.refreshPlaylist = () => {
-        console.log('Refreshing playlist');
+      }
+      function refreshPlaylist() {
         retryCount = 0;
         fetchPlaylist();
-      };
-
-      window.retryConnection = () => {
+      }
+      function retryConnection() {
         retryCount = 0;
         fetchPlaylist();
-      };
+      }
 
-      // Enable cursor on user interaction
       document.addEventListener('mousemove', () => {
         document.body.style.cursor = 'default';
-        setTimeout(() => {
-          document.body.style.cursor = 'none';
-        }, 3000);
+        setTimeout(() => (document.body.style.cursor = 'none'), 3000);
       });
 
-      // Initial fetch
-      console.log('Starting reception display');
+      console.log('Reception Display starting…');
       fetchPlaylist();
-
-      // Refresh the playlist every 2 minutes to check for changes
       setInterval(() => {
-        console.log('Auto-refreshing playlist');
-        if (!isLoading) {
-          fetchPlaylist();
-        }
+        if (!isLoading) fetchPlaylist();
       }, 2 * 60 * 1000);
     </script>
   </body>

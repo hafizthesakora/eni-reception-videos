@@ -14,10 +14,10 @@
         font-family: 'Inter', sans-serif;
       }
       .bg-eni-yellow {
-        background-color: #ffc72c;
+        background: #ffc72c;
       }
       .bg-eni-yellow:hover {
-        background-color: #fabe00;
+        background: #fabe00;
       }
       .spinner {
         border-top-color: #fabe00;
@@ -30,7 +30,7 @@
       }
       .upload-section:hover {
         border-color: #ffc72c;
-        background-color: #fffbf0;
+        background: #fffbf0;
       }
       .progress-bar {
         height: 4px;
@@ -54,11 +54,11 @@
         <div class="flex items-center space-x-4">
           <img
             src="eni_logo.png"
-            alt="Eni Ghana Logo"
-            class="h-10 w-auto"
-            onerror="this.onerror=null;this.src='https://placehold.co/150x50/ffffff/000000?text=Eni+Logo';"
+            alt="Eni Logo"
+            class="h-10"
+            onerror="this.onerror=null;this.src='https://placehold.co/150x50?text=Eni+Logo';"
           />
-          <span class="text-xl font-semibold text-gray-900">Eni Ghana</span>
+          <span class="text-xl font-semibold">Eni Ghana</span>
         </div>
         <a href="index.html" class="text-sm text-yellow-600 hover:underline"
           >← Back to Home</a
@@ -71,63 +71,42 @@
         <div
           class="stat-card bg-white p-6 rounded-lg shadow-sm border border-gray-200"
         >
-          <div
-            class="stat-number text-3xl font-bold text-yellow-600"
-            id="videoCount"
-          >
+          <div id="videoCount" class="text-3xl font-bold text-yellow-600">
             0
           </div>
-          <div class="stat-label text-gray-500">Videos in Playlist</div>
+          <div class="text-gray-500">Videos in Playlist</div>
         </div>
         <div
           class="stat-card bg-white p-6 rounded-lg shadow-sm border border-gray-200"
         >
-          <div
-            class="stat-number text-3xl font-bold text-yellow-600"
-            id="totalSize"
-          >
+          <div id="totalSize" class="text-3xl font-bold text-yellow-600">
             0 MB
           </div>
-          <div class="stat-label text-gray-500">Total Size in Playlist</div>
+          <div class="text-gray-500">Total Size in Playlist</div>
         </div>
         <div
           class="stat-card bg-white p-6 rounded-lg shadow-sm border border-gray-200"
         >
-          <div
-            class="stat-number text-3xl font-bold text-green-600"
-            id="uploadSuccess"
-          >
+          <div id="uploadSuccess" class="text-3xl font-bold text-green-600">
             0
           </div>
-          <div class="stat-label text-gray-500">Successful Uploads</div>
+          <div class="text-gray-500">Successful Uploads</div>
         </div>
       </div>
 
       <div id="upload-container">
         <div
-          class="upload-section bg-white border-2 border-dashed border-gray-300 rounded-lg p-12 text-center transition-all duration-300 cursor-pointer"
-          onclick="document.getElementById('fileInput').click()"
+          id="uploadSection"
+          class="upload-section bg-white border-2 border-dashed border-gray-300 rounded-lg p-12 text-center cursor-pointer"
         >
           <div class="upload-icon mx-auto h-16 w-16 text-gray-400">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke-width="1.5"
-              stroke="currentColor"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"
-              />
-            </svg>
+            <!-- upload SVG ... -->
           </div>
-          <p class="upload-text mt-4 text-lg font-semibold text-gray-700">
-            Click here or drag videos to upload
+          <p class="mt-4 text-lg font-semibold text-gray-700">
+            Click or drag videos to upload
           </p>
           <p class="text-sm text-gray-500 mt-1">
-            Supported formats: MP4, MOV, AVI, WebM (Max 100MB per file)
+            Formats: MP4, MOV, AVI, WebM (Max 100MB)
           </p>
           <input
             type="file"
@@ -144,7 +123,7 @@
         class="text-center mt-4 text-gray-600 min-h-6"
       ></div>
 
-      <div id="upload-progress" class="mt-4" style="display: none">
+      <div id="upload-progress" class="mt-4 hidden">
         <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
           <div class="flex justify-between items-center mb-2">
             <span id="progress-text" class="text-sm font-medium"
@@ -156,7 +135,7 @@
             <div
               id="progress-fill"
               class="progress-fill"
-              style="width: 0%"
+              style="width: 0"
             ></div>
           </div>
         </div>
@@ -168,12 +147,12 @@
             Uploaded Videos
             <div
               id="loading-spinner"
-              class="hidden spinner ml-4 h-6 w-6 rounded-full border-4 border-gray-200"
+              class="spinner ml-4 h-6 w-6 rounded-full hidden"
             ></div>
           </h2>
           <button
-            onclick="refreshPlaylist()"
-            class="bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+            onclick="loadAndRender()"
+            class="bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-lg text-sm"
           >
             🔄 Refresh
           </button>
@@ -186,47 +165,42 @@
     </div>
 
     <script>
-      // --- STEP 1: PASTE YOUR CLOUDINARY CONFIGS ---
       const CLOUDINARY_CLOUD_NAME = 'tekstore';
       const CLOUDINARY_UPLOAD_PRESET = 'eni-videos';
-      // ---------------------------------------------
-
-      // This is the unique name for our playlist file in Cloudinary.
+      const RAW_UPLOAD_PRESET = 'eni-playlist-raw';
       const PLAYLIST_PUBLIC_ID = 'eni_video_playlist';
 
-      // UI Elements & State
       const fileInput = document.getElementById('fileInput');
-      const uploadSection = document.querySelector('.upload-section');
-      const videoListContainer = document.getElementById('videoListContainer');
+      const uploadSection = document.getElementById('uploadSection');
       const statusArea = document.getElementById('status-area');
       const loadingSpinner = document.getElementById('loading-spinner');
       const uploadProgress = document.getElementById('upload-progress');
       const progressText = document.getElementById('progress-text');
       const progressPercent = document.getElementById('progress-percent');
       const progressFill = document.getElementById('progress-fill');
+      const videoCount = document.getElementById('videoCount');
+      const totalSizeEl = document.getElementById('totalSize');
+      const uploadSuccessEl = document.getElementById('uploadSuccess');
+      const videoListContainer = document.getElementById('videoListContainer');
 
-      let currentPlaylist = [];
-      let uploadCount = 0;
-      let isUploading = false;
-
-      // --- CORE FUNCTIONS ---
+      let currentPlaylist = [],
+        uploadCount = 0,
+        isUploading = false;
 
       async function getPlaylist() {
         loadingSpinner.classList.remove('hidden');
-        const cacheBuster = `?_=${new Date().getTime()}`;
-        const url = `https://res.cloudinary.com/${CLOUDINARY_CLOUD_NAME}/raw/upload/${PLAYLIST_PUBLIC_ID}.json${cacheBuster}`;
-
         try {
-          const response = await fetch(url);
-          if (!response.ok) {
-            if (response.status === 404) return []; // File doesn't exist yet, return empty list
-            throw new Error(`HTTP error! status: ${response.status}`);
+          const url = `https://res.cloudinary.com/${CLOUDINARY_CLOUD_NAME}/raw/upload/${PLAYLIST_PUBLIC_ID}?_=${Date.now()}`;
+          const res = await fetch(url);
+          if (!res.ok) {
+            if (res.status === 404) return [];
+            throw new Error(`HTTP ${res.status}`);
           }
-          const data = await response.json();
+          const data = await res.json();
           return Array.isArray(data) ? data : [];
-        } catch (error) {
-          console.error('Could not fetch playlist:', error);
-          return []; // Return empty list on error
+        } catch (err) {
+          console.error('Could not fetch playlist:', err);
+          return [];
         } finally {
           loadingSpinner.classList.add('hidden');
         }
@@ -234,26 +208,37 @@
 
       async function savePlaylist(playlist) {
         statusArea.textContent = 'Saving updated playlist...';
+        statusArea.className = 'text-center mt-4 text-gray-600 min-h-6';
         loadingSpinner.classList.remove('hidden');
 
-        const url = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/raw/upload`;
-        const jsonString = JSON.stringify(playlist, null, 2);
-        const blob = new Blob([jsonString], { type: 'application/json' });
+        const blob = new Blob([JSON.stringify(playlist, null, 2)], {
+          type: 'application/json',
+        });
         const file = new File([blob], `${PLAYLIST_PUBLIC_ID}.json`);
 
         const formData = new FormData();
         formData.append('file', file);
-        formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+        formData.append('upload_preset', RAW_UPLOAD_PRESET);
         formData.append('public_id', PLAYLIST_PUBLIC_ID);
+        formData.append('overwrite', 'true');
+        formData.append('invalidate', 'true');
 
         try {
-          const response = await fetch(url, { method: 'POST', body: formData });
-          const data = await response.json();
+          const res = await fetch(
+            `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/raw/upload`,
+            {
+              method: 'POST',
+              body: formData,
+            }
+          );
+          const data = await res.json();
+          console.log('Cloudinary raw upload response:', data);
           if (data.error) throw new Error(data.error.message);
+
           statusArea.textContent = 'Playlist saved successfully!';
           statusArea.className = 'text-center mt-4 text-green-600 min-h-6';
-        } catch (error) {
-          console.error('Could not save playlist:', error);
+        } catch (err) {
+          console.error('Could not save playlist:', err);
           statusArea.textContent = 'Error saving playlist.';
           statusArea.className = 'text-center mt-4 text-red-600 min-h-6';
         } finally {
@@ -265,56 +250,34 @@
         }
       }
 
-      async function uploadVideoFile(file, index, total) {
-        const progressText = document.getElementById('progress-text');
-        const progressPercent = document.getElementById('progress-percent');
-        const progressFill = document.getElementById('progress-fill');
-
+      async function uploadVideoFile(file, idx, total) {
         progressText.textContent = `Uploading ${file.name} (${
-          index + 1
+          idx + 1
         }/${total})`;
-
-        const url = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/video/upload`;
-        const formData = new FormData();
-        formData.append('file', file);
-        formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
-
-        try {
+        return new Promise((resolve, reject) => {
           const xhr = new XMLHttpRequest();
-
-          return new Promise((resolve, reject) => {
-            xhr.upload.onprogress = (e) => {
-              if (e.lengthComputable) {
-                const fileProgress = (e.loaded / e.total) * 100;
-                const overallProgress =
-                  (index / total + fileProgress / 100 / total) * 100;
-                progressPercent.textContent = `${Math.round(overallProgress)}%`;
-                progressFill.style.width = `${overallProgress}%`;
-              }
-            };
-
-            xhr.onload = () => {
-              if (xhr.status === 200) {
-                const data = JSON.parse(xhr.responseText);
-                if (data.error) {
-                  reject(new Error(data.error.message));
-                } else {
-                  resolve(data);
-                }
-              } else {
-                reject(new Error(`Upload failed with status: ${xhr.status}`));
-              }
-            };
-
-            xhr.onerror = () =>
-              reject(new Error('Network error during upload'));
-            xhr.open('POST', url);
-            xhr.send(formData);
-          });
-        } catch (error) {
-          console.error(`Upload failed for ${file.name}:`, error);
-          throw error;
-        }
+          xhr.upload.onprogress = (e) => {
+            if (e.lengthComputable) {
+              const perFile = (e.loaded / e.total) * 100;
+              const overall = (idx / total + perFile / 100 / total) * 100;
+              progressPercent.textContent = `${Math.round(overall)}%`;
+              progressFill.style.width = `${overall}%`;
+            }
+          };
+          xhr.onload = () => {
+            if (xhr.status === 200) resolve(JSON.parse(xhr.responseText));
+            else reject(new Error(`Status ${xhr.status}`));
+          };
+          xhr.onerror = () => reject(new Error('Network error'));
+          xhr.open(
+            'POST',
+            `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/video/upload`
+          );
+          const fd = new FormData();
+          fd.append('file', file);
+          fd.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+          xhr.send(fd);
+        });
       }
 
       async function loadAndRender() {
@@ -323,20 +286,15 @@
         updateStats();
       }
 
-      // --- EVENT HANDLERS ---
       fileInput.addEventListener('change', (e) => handleFiles(e.target.files));
-
       uploadSection.addEventListener('dragover', (e) => {
         e.preventDefault();
         uploadSection.classList.add('border-yellow-400', 'bg-yellow-50');
       });
-
       uploadSection.addEventListener('dragleave', (e) => {
-        if (!uploadSection.contains(e.relatedTarget)) {
+        if (!uploadSection.contains(e.relatedTarget))
           uploadSection.classList.remove('border-yellow-400', 'bg-yellow-50');
-        }
       });
-
       uploadSection.addEventListener('drop', (e) => {
         e.preventDefault();
         uploadSection.classList.remove('border-yellow-400', 'bg-yellow-50');
@@ -345,76 +303,59 @@
 
       async function handleFiles(files) {
         if (isUploading) {
-          statusArea.textContent = 'Upload already in progress...';
+          statusArea.textContent = 'Upload already in progress…';
           statusArea.className = 'text-center mt-4 text-yellow-600 min-h-6';
           return;
         }
-
-        const videoFiles = Array.from(files).filter((file) => {
-          if (!file.type.startsWith('video/')) return false;
-          if (file.size > 100 * 1024 * 1024) {
-            // 100MB limit
-            statusArea.textContent = `File ${file.name} is too large (max 100MB)`;
-            statusArea.className = 'text-center mt-4 text-red-600 min-h-6';
-            return false;
-          }
-          return true;
-        });
-
-        if (videoFiles.length === 0) {
+        const vids = Array.from(files).filter(
+          (f) => f.type.startsWith('video/') && f.size <= 100 * 1024 * 1024
+        );
+        if (!vids.length) {
           statusArea.textContent = 'No valid video files selected';
           statusArea.className = 'text-center mt-4 text-red-600 min-h-6';
           return;
         }
 
         isUploading = true;
-        uploadProgress.style.display = 'block';
+        uploadProgress.classList.remove('hidden');
+        let success = 0,
+          fail = 0;
 
-        let successCount = 0;
-        let failCount = 0;
-
-        for (let i = 0; i < videoFiles.length; i++) {
-          const file = videoFiles[i];
+        for (let i = 0; i < vids.length; i++) {
           try {
-            const videoData = await uploadVideoFile(file, i, videoFiles.length);
+            const data = await uploadVideoFile(vids[i], i, vids.length);
             currentPlaylist.push({
-              id: videoData.public_id,
+              id: data.public_id,
               name:
-                videoData.original_filename ||
-                file.name.replace(/\.[^/.]+$/, ''),
-              url: videoData.secure_url,
-              size: videoData.bytes,
-              duration: videoData.duration || 0,
+                data.original_filename || vids[i].name.replace(/\.[^/.]+$/, ''),
+              url: data.secure_url,
+              size: data.bytes,
+              duration: data.duration || 0,
               createdAt: new Date().toISOString(),
             });
-            successCount++;
-          } catch (error) {
-            console.error(`Failed to upload ${file.name}:`, error);
-            failCount++;
+            success++;
+          } catch (err) {
+            console.error(`Upload error for ${vids[i].name}:`, err);
+            fail++;
           }
         }
 
-        // Save the entire updated playlist once after all uploads are done
-        if (successCount > 0) {
+        if (success > 0) {
           await savePlaylist(currentPlaylist);
-          uploadCount += successCount;
+          uploadCount += success;
         }
 
-        // Update UI
-        uploadProgress.style.display = 'none';
+        uploadProgress.classList.add('hidden');
+        statusArea.textContent =
+          fail > 0
+            ? `Upload completed: ${success} succeeded, ${fail} failed`
+            : `Successfully uploaded ${success} video(s)!`;
+        statusArea.className = `text-center mt-4 text-${
+          fail > 0 ? 'yellow' : 'green'
+        }-600 min-h-6`;
 
-        if (failCount > 0) {
-          statusArea.textContent = `Upload completed: ${successCount} successful, ${failCount} failed`;
-          statusArea.className = 'text-center mt-4 text-yellow-600 min-h-6';
-        } else {
-          statusArea.textContent = `Successfully uploaded ${successCount} video(s)!`;
-          statusArea.className = 'text-center mt-4 text-green-600 min-h-6';
-        }
-
-        // Re-render the list from the newly saved playlist
         await loadAndRender();
         isUploading = false;
-
         setTimeout(() => {
           statusArea.textContent = '';
           statusArea.className = 'text-center mt-4 text-gray-600 min-h-6';
@@ -422,140 +363,93 @@
       }
 
       videoListContainer.addEventListener('click', async (e) => {
-        const deleteBtn = e.target.closest('.delete-btn');
-        if (deleteBtn) {
-          const videoId = deleteBtn.dataset.id;
-          const videoName = deleteBtn.dataset.name;
-
-          if (
-            confirm(
-              `Are you sure you want to remove "${videoName}" from the playlist?`
-            )
-          ) {
-            currentPlaylist = currentPlaylist.filter(
-              (video) => video.id !== videoId
-            );
-            await savePlaylist(currentPlaylist);
-            await loadAndRender();
-          }
+        const btn = e.target.closest('.delete-btn');
+        if (!btn) return;
+        const id = btn.dataset.id,
+          name = btn.dataset.name;
+        if (confirm(`Remove "${name}" from playlist?`)) {
+          currentPlaylist = currentPlaylist.filter((v) => v.id !== id);
+          await savePlaylist(currentPlaylist);
+          await loadAndRender();
         }
       });
 
-      // --- UI RENDERING ---
       function renderVideos() {
-        if (currentPlaylist.length === 0) {
-          videoListContainer.innerHTML = `<p class="text-center text-gray-500 py-10">No videos uploaded yet.</p>`;
+        if (!currentPlaylist.length) {
+          videoListContainer.innerHTML = `<p class="text-center py-10 text-gray-500">No videos uploaded.</p>`;
           return;
         }
-
-        videoListContainer.innerHTML = [...currentPlaylist]
+        videoListContainer.innerHTML = currentPlaylist
+          .slice()
           .reverse()
           .map(
-            (video, index) => `
-                <div class="flex items-center justify-between p-4 border-b border-gray-200 last:border-b-0 hover:bg-gray-50">
-                    <div class="flex-1">
-                        <p class="font-semibold text-gray-900">${video.name}</p>
-                        <div class="flex items-center space-x-4 text-sm text-gray-500 mt-1">
-                            <span>${formatFileSize(video.size)}</span>
-                            <span>•</span>
-                            <span>Uploaded: ${new Date(
-                              video.createdAt
-                            ).toLocaleDateString()}</span>
-                            ${
-                              video.duration
-                                ? `<span>• ${formatDuration(
-                                    video.duration
-                                  )}</span>`
-                                : ''
-                            }
-                        </div>
-                    </div>
-                    <div class="flex items-center space-x-2">
-                        <a 
-                            href="${video.url}" 
-                            target="_blank" 
-                            class="text-blue-600 hover:text-blue-800 text-sm underline"
-                            title="Preview video"
-                        >
-                            Preview
-                        </a>
-                        <button 
-                            class="delete-btn text-gray-400 hover:text-red-600 transition-colors p-1" 
-                            data-id="${video.id}"
-                            data-name="${video.name}"
-                            title="Remove from playlist"
-                        >
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                            </svg>
-                        </button>
-                    </div>
-                </div>`
+            (v) => `
+          <div class="flex items-center justify-between p-4 border-b border-gray-200 hover:bg-gray-50">
+            <div>
+              <p class="font-semibold text-gray-900">${v.name}</p>
+              <p class="text-sm text-gray-500 mt-1">
+                ${formatFileSize(v.size)} • Uploaded: ${new Date(
+              v.createdAt
+            ).toLocaleDateString()}
+                ${v.duration ? ` • ${formatDuration(v.duration)}` : ''}
+              </p>
+            </div>
+            <div class="flex items-center space-x-2">
+              <a href="${
+                v.url
+              }" target="_blank" class="text-blue-600 underline text-sm">Preview</a>
+              <button class="delete-btn text-gray-400 hover:text-red-600 p-1" data-id="${
+                v.id
+              }" data-name="${v.name}" title="Remove">
+                🗑️
+              </button>
+            </div>
+          </div>
+        `
           )
           .join('');
       }
 
       function updateStats() {
-        document.getElementById('videoCount').textContent =
-          currentPlaylist.length;
-        document.getElementById('uploadSuccess').textContent = uploadCount;
-
-        const totalBytes = currentPlaylist.reduce(
-          (sum, video) => sum + (video.size || 0),
+        videoCount.textContent = currentPlaylist.length;
+        uploadSuccessEl.textContent = uploadCount;
+        const total = currentPlaylist.reduce(
+          (sum, v) => sum + (v.size || 0),
           0
         );
-        document.getElementById('totalSize').textContent =
-          formatFileSize(totalBytes);
+        totalSizeEl.textContent = formatFileSize(total);
       }
 
-      function formatFileSize(bytes) {
-        if (!bytes || bytes === 0) return '0 Bytes';
-        const k = 1024;
-        const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
-        const i = Math.floor(Math.log(bytes) / Math.log(k));
-        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+      function formatFileSize(b) {
+        if (!b) return '0 Bytes';
+        const k = 1024,
+          sizes = ['Bytes', 'KB', 'MB', 'GB'],
+          i = Math.floor(Math.log(b) / Math.log(k));
+        return (b / Math.pow(k, i)).toFixed(2) + ' ' + sizes[i];
+      }
+      function formatDuration(s) {
+        const m = Math.floor(s / 60),
+          sec = Math.floor(s % 60)
+            .toString()
+            .padStart(2, '0');
+        return `${m}:${sec}`;
       }
 
-      function formatDuration(seconds) {
-        if (!seconds) return '';
-        const mins = Math.floor(seconds / 60);
-        const secs = Math.floor(seconds % 60);
-        return `${mins}:${secs.toString().padStart(2, '0')}`;
-      }
-
-      function refreshPlaylist() {
-        loadAndRender();
-      }
-
-      // Validate configuration
       function validateConfig() {
-        if (
-          !CLOUDINARY_CLOUD_NAME ||
-          CLOUDINARY_CLOUD_NAME === 'YOUR_CLOUD_NAME'
-        ) {
-          statusArea.textContent =
-            'Please configure your Cloudinary cloud name';
+        if (!CLOUDINARY_CLOUD_NAME) {
+          statusArea.textContent = 'Configure CLOUDINARY_CLOUD_NAME';
           statusArea.className = 'text-center mt-4 text-red-600 min-h-6';
           return false;
         }
-
-        if (
-          !CLOUDINARY_UPLOAD_PRESET ||
-          CLOUDINARY_UPLOAD_PRESET === 'YOUR_UPLOAD_PRESET'
-        ) {
-          statusArea.textContent =
-            'Please configure your Cloudinary upload preset';
+        if (!CLOUDINARY_UPLOAD_PRESET) {
+          statusArea.textContent = 'Configure CLOUDINARY_UPLOAD_PRESET';
           statusArea.className = 'text-center mt-4 text-red-600 min-h-6';
           return false;
         }
-
         return true;
       }
 
-      // Initial Load
-      if (validateConfig()) {
-        loadAndRender();
-      }
+      if (validateConfig()) loadAndRender();
     </script>
   </body>
 </html>
